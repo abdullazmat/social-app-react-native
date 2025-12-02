@@ -8,19 +8,46 @@ import Input from "../components/Input";
 import ScreenWrapper from "../components/ScreenWrapper";
 import { theme } from "../constants/theme";
 import { hp, wp } from "../helpers/common";
+import { supabase } from "../lib/supabase";
 
 const Login = () => {
   const router = useRouter();
   const emailRef = useRef("");
   const passwordRef = useRef("");
   const [loading, setLoading] = useState(false);
-  const onsubmit = () => {
-    // Perform login logic here
+  const onsubmit = async () => {
     if (!emailRef.current || !passwordRef.current) {
       alert("Please fill in all fields");
       return;
     }
+
+    let email = emailRef.current.trim().toLowerCase();
+    let password = passwordRef.current;
+
+    try {
+      setLoading(true);
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      // Login successful
+      alert("Login Successful");
+
+      router.push("home"); // or home screen
+    } catch (err) {
+      alert("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
+
   return (
     <ScreenWrapper>
       <StatusBar style="dark" />

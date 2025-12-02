@@ -1,6 +1,13 @@
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
+import {
+  AppState,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import Icon from "../assets/icons";
 import BackButton from "../components/BackButton";
 import Button from "../components/Button";
@@ -8,6 +15,15 @@ import Input from "../components/Input";
 import ScreenWrapper from "../components/ScreenWrapper";
 import { theme } from "../constants/theme";
 import { hp, wp } from "../helpers/common";
+import { supabase } from "../lib/supabase";
+
+AppState.addEventListener("change", (state) => {
+  if (state === "active") {
+    supabase.auth.startAutoRefresh();
+  } else {
+    supabase.auth.stopAutoRefresh();
+  }
+});
 
 const SignUp = () => {
   const router = useRouter();
@@ -15,12 +31,46 @@ const SignUp = () => {
   const passwordRef = useRef("");
   const nameRef = useRef("");
   const [loading, setLoading] = useState(false);
-  const onsubmit = () => {
+  const onsubmit = async () => {
     if (!nameRef.current || !emailRef.current || !passwordRef.current) {
       alert("Sign Up, Please fill in all fields");
       return;
     }
+
+    let email = emailRef.current.trim().toLowerCase();
+    let password = passwordRef.current;
+    let name = nameRef.current.trim();
+
+    try {
+      setLoading(true);
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name },
+        },
+      });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      if (!data.session) {
+        alert("Please check your email for verification");
+        return;
+      }
+
+      alert("Sign Up Successful");
+      router.push("login");
+    } catch (err) {
+      alert("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
+
   return (
     <ScreenWrapper>
       <StatusBar style="dark" />
